@@ -1,0 +1,500 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ultra Tic‑Tac‑Toe</title>
+  <style>
+    :root{
+      --bg1:#0f172a; /* slate-900 */
+      --bg2:#020617; /* slate-950 */
+      --card:#0b1220; /* deep card */
+      --text:#e5e7eb; /* light */
+      --muted:#94a3b8; /* slate-400 */
+      --primary:#22d3ee; /* cyan-400 */
+      --primary-2:#a78bfa; /* violet-400 */
+      --accent:#34d399; /* emerald-400 */
+      --danger:#f43f5e; /* rose-500 */
+      --gold:#fbbf24;
+      --shadow: 0 10px 30px rgba(2,8,23,.6), inset 0 1px 0 rgba(255,255,255,.04);
+      --glass: rgba(255,255,255,.06);
+      --radius: 20px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, "Helvetica Neue", Arial;
+      color:var(--text); background:radial-gradient(1200px 800px at 10% -10%, rgba(34,211,238,.15), transparent),
+                         radial-gradient(800px 600px at 90% 10%, rgba(167,139,250,.18), transparent),
+                         radial-gradient(1400px 900px at 50% 120%, rgba(52,211,153,.12), transparent),
+                         linear-gradient(180deg, var(--bg1), var(--bg2));
+      overflow:hidden;
+    }
+    /* Floating particles */
+    .twinkle{position:fixed; inset:0; pointer-events:none; z-index:0}
+    .twinkle span{position:absolute; width:3px; height:3px; background:rgba(255,255,255,.5); border-radius:50%;
+      filter:blur(.5px); animation:float 12s linear infinite; opacity:.7}
+    @keyframes float{ from{ transform: translateY(0) } to{ transform: translateY(-120vh) } }
+
+    /* App shell */
+    .app{position:relative; z-index:1; height:100%; display:grid; place-items:center; padding:24px}
+    .phone{
+      width:min(960px, 100%); height:min(90vh, 820px); border-radius:28px; background:rgba(2,6,23,.65);
+      backdrop-filter: blur(12px); box-shadow: var(--shadow); border:1px solid rgba(255,255,255,.05);
+      display:grid; grid-template-rows: 64px 1fr 68px; overflow:hidden; position:relative;
+    }
+    .phone::before{content:""; position:absolute; inset:-2px; border-radius:30px; padding:2px; background:
+      linear-gradient(135deg, rgba(34,211,238,.35), rgba(167,139,250,.35)); -webkit-mask:
+      linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+      -webkit-mask-composite: xor; mask-composite: exclude; pointer-events:none}
+
+    /* Top bar */
+    .topbar{display:flex; align-items:center; gap:12px; padding:0 18px; background:linear-gradient(0deg, rgba(255,255,255,.02), rgba(255,255,255,.04)); border-bottom:1px solid rgba(255,255,255,.07)}
+    .back{width:36px; height:36px; display:grid; place-items:center; border-radius:12px; background:var(--glass); cursor:pointer}
+    .profile{display:flex; align-items:center; gap:10px; margin-inline:auto 0}
+    .avatar{width:36px; height:36px; border-radius:50%; background:linear-gradient(135deg, var(--primary), var(--primary-2)); display:grid; place-items:center; font-weight:700}
+    .gems{margin-left:auto; display:flex; align-items:center; gap:6px}
+    .gem{width:24px; height:24px; background:conic-gradient(from 45deg, #7dd3fc, #22d3ee, #60a5fa); clip-path: polygon(50% 0, 90% 35%, 72% 100%, 28% 100%, 10% 35%); filter:drop-shadow(0 4px 8px rgba(34,211,238,.35))}
+
+    /* Sections */
+    .screen{position:relative; height:100%; overflow:auto}
+    .row{display:grid; grid-template-columns: repeat(3, 1fr); gap:14px}
+
+    .panel{background:var(--card); border:1px solid rgba(255,255,255,.06); border-radius:var(--radius);
+      box-shadow: var(--shadow); padding:16px}
+
+    .toolbar{display:grid; grid-template-columns:repeat(3, 1fr); gap:14px; margin-bottom:14px}
+    .tool{display:flex; gap:10px; align-items:center; justify-content:center; padding:12px 14px; border-radius:16px;
+          background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03)); border:1px solid rgba(255,255,255,.06);
+          cursor:pointer; transition: transform .2s ease, box-shadow .2s ease}
+    .tool:hover{transform: translateY(-2px); box-shadow: 0 10px 18px rgba(0,0,0,.35)}
+
+    .board-settings{display:flex; gap:14px; align-items:center}
+    .chip{padding:8px 12px; border-radius:999px; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.07); font-size:12px}
+
+    .modes{display:grid; grid-template-columns: repeat(2, 1fr); gap:18px; margin-top:18px}
+    .mode{position:relative; display:grid; place-items:center; height:170px; border-radius:28px; background:linear-gradient(180deg, rgba(34,197,94,.15), rgba(2,6,23,.5));
+          border:1px solid rgba(34,197,94,.25); cursor:pointer; overflow:hidden; transition:transform .2s}
+    .mode:nth-child(2){background:linear-gradient(180deg, rgba(59,130,246,.15), rgba(2,6,23,.5)); border-color:rgba(59,130,246,.25)}
+    .mode:nth-child(3){background:linear-gradient(180deg, rgba(245,158,11,.15), rgba(2,6,23,.5)); border-color:rgba(245,158,11,.25)}
+    .mode:nth-child(4){background:linear-gradient(180deg, rgba(244,63,94,.15), rgba(2,6,23,.5)); border-color:rgba(244,63,94,.25)}
+    .mode:hover{transform:translateY(-4px)}
+    .mode h3{margin:0; font-size:18px}
+    .mode .bot, .mode .duo{position:absolute; inset:auto 0 -40px; height:180px; opacity:.4; filter: blur(1px)}
+
+    /* Bottom bar */
+    .bottombar{display:flex; align-items:center; justify-content:center; gap:18px; border-top:1px solid rgba(255,255,255,.07); background:linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,.04))}
+    .bbbtn{margin:10px 0; width:44px; height:44px; display:grid; place-items:center; border-radius:14px; background:var(--glass); border:1px solid rgba(255,255,255,.06); cursor:pointer}
+
+    /* Game View */
+    .game{position:absolute; inset:0; background:rgba(2,6,23,.92); display:none; grid-template-rows: 64px 1fr}
+    .game.show{display:grid}
+    .game-top{display:flex; align-items:center; gap:12px; padding:0 16px; border-bottom:1px solid rgba(255,255,255,.07)}
+    .pill{padding:6px 10px; border-radius:999px; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.08); font-size:12px}
+    .score{margin-left:auto; display:flex; gap:10px}
+
+    .board{display:grid; gap:8px; margin:18px auto; width:min(560px, 88%)}
+    .cell{aspect-ratio:1/1; border-radius:14px; background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+          border:1px solid rgba(255,255,255,.08); display:grid; place-items:center; font-weight:800; font-size:clamp(18px, 6vw, 42px);
+          cursor:pointer; position:relative; overflow:hidden}
+    .cell:after{content:""; position:absolute; inset:-40%; background: radial-gradient(240px 120px at 50% -30%, rgba(255,255,255,.2), transparent);
+                transform: translateY(120%); transition: transform .5s ease}
+    .cell:active:after{transform: translateY(0)}
+    .cell.win{outline:2px solid var(--gold); box-shadow:0 0 0 2px rgba(251,191,36,.25) inset}
+
+    .rightbar{position:absolute; right:16px; top:90px; width:220px; background:var(--card); border:1px solid rgba(255,255,255,.06); border-radius:18px; padding:12px; display:flex; flex-direction:column; gap:10px}
+    .rightbar h4{margin:0 0 6px 0}
+    .list{max-height:220px; overflow:auto; font-size:13px; color:var(--muted)}
+
+    .actions{display:flex; gap:10px; justify-content:center; margin-bottom:12px}
+    .btn{padding:10px 14px; border-radius:14px; border:1px solid rgba(255,255,255,.1); background:linear-gradient(180deg, rgba(255,255,255,.1), rgba(255,255,255,.04)); cursor:pointer}
+
+    /* Dialogs */
+    dialog{border:0; background:rgba(2,6,23,.85); color:var(--text); border-radius:20px; padding:20px; width:min(520px, 92%); box-shadow:var(--shadow)}
+    .row2{display:grid; grid-template-columns:1fr 1fr; gap:12px}
+
+    /* Themes */
+    .theme-neon{--primary:#22d3ee; --primary-2:#a78bfa; --accent:#34d399;}
+    .theme-sunset{--bg1:#0b1020; --bg2:#0a0814; --primary:#fb7185; --primary-2:#f59e0b; --accent:#fde047}
+    .theme-classic{--bg1:#111827; --bg2:#030712; --primary:#60a5fa; --primary-2:#34d399; --accent:#f59e0b}
+  </style>
+</head>
+<body class="theme-neon">
+  <!-- floating stars -->
+  <div class="twinkle" id="twinkle"></div>
+
+  <div class="app">
+    <div class="phone" id="phone">
+      <!-- Top bar -->
+      <div class="topbar">
+        <div class="back" title="Back" onclick="toast('You\'re home!')">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+        </div>
+        <div class="profile">
+          <div class="avatar">TG</div>
+          <div>
+            <div style="font-weight:700; letter-spacing:.2px" ></div>
+            <div style="font-size:12px; color:var(--muted)">Points <span id="points">1000</span></div>
+          </div>
+        </div>
+        <div class="gems"><div class="gem"></div><span id="diamonds">18</span>
+          <div class="bbbtn" title="Add gems" onclick="addDiamonds()">+</div>
+        </div>
+      </div>
+
+      <!-- Home screen -->
+      <div class="screen" id="home">
+        <div class="toolbar">
+          <div class="tool" onclick="openLeaderboard()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h7v18H3zM14 9h7v12h-7z"/></svg>
+            <b>LEADERBOARD</b>
+          </div>
+          <div class="tool" onclick="shareInvite()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12l-4 4m0 0l-4-4m4 4V2"/><path d="M2 12v8a2 2 0 0 0 2 2h12"/></svg>
+            <b>PLAY INVITATION</b>
+          </div>
+          <div class="tool" onclick="toast('Ads removed ✨ (demo)')">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M4.9 4.9l14.2 14.2"/></svg>
+            <b>REMOVE ADS</b>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px">
+            <h3 style="margin:0">Board Settings</h3>
+            <div class="bbbtn" onclick="openSettings()" title="Edit settings">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+            </div>
+          </div>
+          <div class="board-settings">
+            <span class="chip">Board Type: <b id="boardSizeLabel">3 × 3</b></span>
+            <span class="chip">Align To Win: <b id="alignLabel">3</b></span>
+            <span class="chip">Theme: <b id="themeLabel">Neon</b></span>
+          </div>
+        </div>
+
+        <div class="modes">
+          <div class="mode" onclick="startGame('cpu')">
+            <h3>PLAY WITH COMPUTER</h3>
+            <svg class="bot" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+              <defs><linearGradient id="g1" x1="0" x2="1"><stop offset="0" stop-color="#22d3ee"/><stop offset="1" stop-color="#a78bfa"/></linearGradient></defs>
+              <rect x="30" y="15" rx="14" ry="14" width="60" height="74" stroke="url(#g1)" fill="none" stroke-width="3" />
+              <circle cx="50" cy="44" r="6" fill="#22d3ee"/><circle cx="70" cy="44" r="6" fill="#a78bfa"/>
+              <rect x="40" y="62" width="40" height="6" rx="3" fill="#fff" opacity=".3"/>
+              <rect x="20" y="96" width="80" height="10" rx="6" fill="#fff" opacity=".2"/>
+            </svg>
+          </div>
+          <div class="mode" onclick="startGame('online')">
+            <h3>PLAY ONLINE</h3>
+            <svg class="duo" viewBox="0 0 200 120"><defs><linearGradient id="g2" x1="0" x2="1"><stop offset="0" stop-color="#60a5fa"/><stop offset="1" stop-color="#22d3ee"/></linearGradient></defs>
+              <circle cx="70" cy="46" r="18" stroke="url(#g2)" stroke-width="4" fill="none"/>
+              <circle cx="130" cy="46" r="18" stroke="url(#g2)" stroke-width="4" fill="none"/>
+              <path d="M20 100c40-40 120-40 160 0" stroke="#fff" opacity=".3" stroke-width="6" fill="none"/>
+            </svg>
+          </div>
+          <div class="mode" onclick="startGame('local')">
+            <h3>LOCAL MULTIPLAYER</h3>
+            <svg class="duo" viewBox="0 0 200 120"><rect x="30" y="50" width="60" height="60" rx="8" fill="#fff" opacity=".08"/><rect x="110" y="50" width="60" height="60" rx="8" fill="#fff" opacity=".08"/></svg>
+          </div>
+          <div class="mode" onclick="startGame('friends')">
+            <h3>PLAY WITH FRIENDS</h3>
+            <svg class="duo" viewBox="0 0 200 120"><path d="M60 70a20 20 0 1 0 0-40 20 20 0 0 0 0 40zM140 70a20 20 0 1 0 0-40 20 20 0 0 0 0 40z" fill="#fff" opacity=".2"/></svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom bar -->
+      <div class="bottombar">
+        <div class="bbbtn" title="Share" onclick="shareInvite()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"/><path d="M16 6l-4-4-4 4"/><path d="M12 2v14"/></svg>
+        </div>
+        <div class="bbbtn" title="Favorites" onclick="toast('Added to favorites ❤')">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z"/></svg>
+        </div>
+        <div class="bbbtn" title="Settings" onclick="openSettings()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06A2 2 0 1 1 7.04 4.4l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09c0 .65.38 1.24 1 1.51.59.28 1.28.2 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06c-.46.46-.6 1.15-.33 1.82.27.64.86 1.02 1.51 1.02H21a2 2 0 1 1 0 4h-.09c-.65 0-1.24.38-1.51 1z"/></svg>
+        </div>
+      </div>
+
+      <!-- Game Screen -->
+      <div class="game" id="game">
+        <div class="game-top">
+          <div class="back bbbtn" onclick="closeGame()" title="Exit game">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+          </div>
+          <div class="pill" id="modePill">Mode: Local</div>
+          <div class="pill" id="turnPill">Turn: X</div>
+          <div class="score"><span class="pill" id="scoreX">X: 0</span><span class="pill" id="scoreO">O: 0</span></div>
+        </div>
+        <div style="position:relative">
+          <div class="board" id="board"></div>
+          <div class="rightbar">
+            <h4>Round Winners</h4>
+            <div class="list" id="roundList"></div>
+            <div class="actions">
+              <button class="btn" onclick="restartRound()">Restart Round</button>
+              <button class="btn" onclick="newMatch()">New Match</button>
+            </div>
+            <div style="display:flex; gap:8px; align-items:center; justify-content:space-between">
+              <label><input type="checkbox" id="soundToggle" checked onchange="toggleSound(this.checked)"/> Sound</label>
+              <label><input type="checkbox" id="themeToggle" onchange="cycleTheme()"/> Theme</label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings Dialog -->
+  <dialog id="settingsDlg">
+    <form method="dialog">
+      <h3 style="margin-top:0">Game Settings</h3>
+      <div class="row2">
+        <label>Board Size
+          <select id="boardSize">
+            <option value="3">3 × 3 (Classic)</option>
+            <option value="5">5 × 5</option>
+            <option value="7">7 × 7</option>
+            <option value="11">11 × 11</option>
+          </select>
+        </label>
+        <label>Align To Win
+          <select id="align">
+            <option>3</option>
+            <option>4</option>
+            <option selected>5</option>
+          </select>
+        </label>
+      </div>
+      <div class="row2" style="margin-top:10px">
+        <label>Theme
+          <select id="themeSel">
+            <option value="neon">Neon</option>
+            <option value="sunset">Sunset</option>
+            <option value="classic">Classic</option>
+          </select>
+        </label>
+        <label>Player Names
+          <input id="pnames" placeholder="X name, O name" />
+        </label>
+      </div>
+      <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:14px">
+        <button class="btn" value="cancel">Cancel</button>
+        <button class="btn" value="default" onclick="applySettings(); return false;">Apply</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Toast -->
+  <div id="toast" style="position:fixed; left:50%; bottom:26px; transform:translateX(-50%) translateY(120%); background:rgba(2,6,23,.9); border:1px solid rgba(255,255,255,.12); padding:10px 14px; border-radius:12px; box-shadow:var(--shadow); transition: transform .35s ease; z-index:10"></div>
+
+<script>
+// ===== Utility: Twinkles =====
+(function twinkles(){
+  const wrap = document.getElementById('twinkle');
+  for(let i=0;i<70;i++){
+    const s = document.createElement('span');
+    const size = Math.random()*2.5 + .6;
+    s.style.width = s.style.height = size+'px';
+    s.style.left = Math.random()*100+'%';
+    s.style.top = (Math.random()*160+20)+'%';
+    s.style.animationDuration = (10 + Math.random()*10)+'s';
+    s.style.opacity = .4 + Math.random()*.6;
+    wrap.appendChild(s);
+  }
+})();
+
+// ===== Global State =====
+const state = {
+  size: 3,
+  align: 3,
+  theme: 'neon',
+  turn: 'X',
+  board: [],
+  running: false,
+  mode: 'local',
+  names: { X: 'Player X', O: 'Player O' },
+  score: { X:0, O:0 },
+  sound: true,
+  rounds: [],
+  points: Number(localStorage.getItem('ttt_points')||1000),
+  diamonds: Number(localStorage.getItem('ttt_diamonds')||18)
+};
+
+function syncBadges(){
+  document.getElementById('points').textContent = state.points;
+  document.getElementById('diamonds').textContent = state.diamonds;
+}
+
+function addDiamonds(){ state.diamonds+=1; localStorage.setItem('ttt_diamonds', state.diamonds); syncBadges(); ping(); }
+
+// ===== Sounds (WebAudio, no files) =====
+let audioCtx;
+function playTone(freq=660, dur=0.08, type='sine', vol=0.2){
+  if(!state.sound) return; if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+  const o=audioCtx.createOscillator(), g=audioCtx.createGain();
+  o.type=type; o.frequency.value=freq; g.gain.value=vol; o.connect(g); g.connect(audioCtx.destination); o.start();
+  g.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime+dur); o.stop(audioCtx.currentTime+dur);
+}
+function clickSound(){ playTone(520, .06, 'triangle', .25); }
+function winSound(){ playTone(880,.12,'sawtooth',.25); setTimeout(()=>playTone(660,.12,'sawtooth',.22),100); setTimeout(()=>playTone(990,.2,'square',.2),200);} 
+function drawSound(){ playTone(300,.12,'square',.18); setTimeout(()=>playTone(240,.18,'square',.14),120);} 
+
+function toggleSound(v){ state.sound = v; toast(v? 'Sound ON 🔊' : 'Sound OFF'); }
+
+// ===== Home widgets =====
+function openSettings(){ document.getElementById('settingsDlg').showModal(); }
+function applySettings(){
+  const sz = Number(document.getElementById('boardSize').value);
+  const al = Number(document.getElementById('align').value);
+  const th = document.getElementById('themeSel').value;
+  const names = document.getElementById('pnames').value.trim();
+  if (names.includes(',')){
+    const [nx, no] = names.split(',').map(s=>s.trim()).filter(Boolean);
+    if(nx) state.names.X = nx; if(no) state.names.O = no;
+  }
+  state.size = sz; state.align = Math.min(al, sz); setTheme(th);
+  document.getElementById('boardSizeLabel').textContent = ${state.size} × ${state.size};
+  document.getElementById('alignLabel').textContent = ${state.align};
+  document.getElementById('themeLabel').textContent = themeLabel();
+  document.getElementById('settingsDlg').close();
+  toast('Settings applied');
+}
+function setTheme(key){
+  state.theme = key; const b=document.body; b.classList.remove('theme-neon','theme-sunset','theme-classic');
+  b.classList.add('theme-'+key);
+}
+function themeLabel(){ return state.theme==='neon'?'Neon': state.theme==='sunset'?'Sunset':'Classic'; }
+function cycleTheme(){ setTheme(state.theme==='neon'?'sunset': state.theme==='sunset'?'classic':'neon'); document.getElementById('themeLabel').textContent = themeLabel(); }
+
+function openLeaderboard(){
+  const top = JSON.parse(localStorage.getItem('ttt_leader')||'[]');
+  if(!top.length) toast('Leaderboard empty (local demo)');
+  else toast('Top: '+ top.map(x=>${x.name} ${x.score}).join(', '));
+}
+function shareInvite(){ navigator.clipboard?.writeText('Join me in Ultra Tic‑Tac‑Toe!').then(()=>toast('Invite copied 📩')).catch(()=>toast('Invite ready 📩')) }
+
+// ===== Game logic =====
+function startGame(mode){
+  state.mode = mode==='friends' ? 'local' : mode; // friends -> local with custom names
+  if(mode==='friends'){
+    document.getElementById('pnames').value = ${state.names.X}, ${state.names.O};
+    openSettings();
+  }
+  document.getElementById('modePill').textContent = 'Mode: ' + (mode==='cpu'?'Computer': mode==='online'?'Online (demo)': 'Local');
+  state.turn = 'X'; state.score={X:0,O:0}; state.rounds=[]; updateScore();
+  buildBoard();
+  document.getElementById('home').style.display='none';
+  document.getElementById('game').classList.add('show');
+}
+
+function closeGame(){ document.getElementById('game').classList.remove('show'); document.getElementById('home').style.display='block'; }
+
+function buildBoard(){
+  const wrap = document.getElementById('board'); wrap.innerHTML='';
+  wrap.style.gridTemplateColumns = repeat(${state.size}, 1fr);
+  state.board = Array.from({length: state.size}, ()=> Array(state.size).fill(''));
+  for(let r=0;r<state.size;r++){
+    for(let c=0;c<state.size;c++){
+      const cell = document.createElement('div'); cell.className='cell'; cell.dataset.r=r; cell.dataset.c=c; cell.addEventListener('click', onCell);
+      wrap.appendChild(cell);
+    }
+  }
+  document.getElementById('turnPill').textContent = Turn: ${state.turn} (${state.names[state.turn]||state.turn});
+  document.getElementById('roundList').innerHTML = '';
+}
+
+function onCell(e){
+  const r = +e.currentTarget.dataset.r, c = +e.currentTarget.dataset.c;
+  if(state.board[r][c] || checkEnd()) return;
+  clickSound();
+  place(r,c, state.turn);
+  const end = checkEnd();
+  if(end){ handleEnd(end); return; }
+  swapTurn();
+  if(state.mode==='cpu' && state.turn==='O'){
+    setTimeout(cpuMove, 280);
+  }
+}
+
+function place(r,c, mark){ state.board[r][c]=mark; const idx = r*state.size+c; document.getElementById('board').children[idx].textContent = mark; }
+function swapTurn(){ state.turn = state.turn==='X'?'O':'X'; document.getElementById('turnPill').textContent = Turn: ${state.turn} (${state.names[state.turn]||state.turn}); }
+
+function linesFrom(r,c){
+  const dirs = [[1,0],[0,1],[1,1],[1,-1]]; const lines=[]; const n=state.size;
+  for(const [dr,dc] of dirs){ const line=[]; let rr=r, cc=c; while(rr>=0&&rr<n&&cc>=0&&cc<n){ rr-=dr; cc-=dc; }
+    rr+=dr; cc+=dc; while(rr>=0&&rr<n&&cc>=0&&cc<n){ line.push([rr,cc]); rr+=dr; cc+=dc; } lines.push(line); }
+  return lines;
+}
+
+function checkEnd(){
+  // win
+  const n=state.size, k=state.align;
+  // scan all cells where last move placed might be unknown; do full scan for safety
+  for(let r=0;r<n;r++){
+    for(let c=0;c<n;c++){
+      const m = state.board[r][c]; if(!m) continue;
+      const dirs = [[1,0],[0,1],[1,1],[1,-1]];
+      for(const [dr,dc] of dirs){ let cnt=1; let cells=[[r,c]];
+        for(let step=1;step<k;step++){ const rr=r+dr*step, cc=c+dc*step; if(rr<0||rr>=n||cc<0||cc>=n) break; if(state.board[rr][cc]===m){cnt++; cells.push([rr,cc]);} else break; }
+        if(cnt>=k){ highlightWin(cells); return {win:m, cells}; }
+      }
+    }
+  }
+  // draw
+  if(state.board.every(row=>row.every(x=>x))) return {draw:true};
+  return null;
+}
+
+function highlightWin(cells){ const b=document.getElementById('board'); const n=state.size; cells.forEach(([r,c])=>{ b.children[r*n+c].classList.add('win'); }); }
+
+function handleEnd(end){
+  if(end.win){ winSound(); const w=end.win; state.score[w]++; updateScore();
+    const label = ${w} — ${state.names[w]||w}; pushRound(${label} won); state.points+=10; localStorage.setItem('ttt_points', state.points); syncBadges();
+    pushLeader(label, state.score[w]);
+  } else { drawSound(); pushRound('Draw'); }
+}
+
+function pushRound(text){ const item=document.createElement('div'); item.textContent = • ${text}; document.getElementById('roundList').prepend(item); }
+function updateScore(){ document.getElementById('scoreX').textContent=X: ${state.score.X}; document.getElementById('scoreO').textContent=O: ${state.score.O}; }
+
+function restartRound(){ buildBoard(); toast('Round restarted'); }
+function newMatch(){ state.score={X:0,O:0}; updateScore(); buildBoard(); toast('New match'); }
+
+// ===== Simple CPU (win, block, center, best corner, random) =====
+function cpuMove(){
+  const n=state.size; const k=state.align;
+  const opp='X', me='O';
+  // helper: test placing mark leads to win
+  function wouldWin(mark){ for(let r=0;r<n;r++){ for(let c=0;c<n;c++){ if(!state.board[r][c]){ state.board[r][c]=mark; const win=checkEnd(); state.board[r][c]=''; if(win && win.win===mark) return [r,c]; } } } return null; }
+  // 1) win if possible
+  let mv = wouldWin(me); if(mv){ place(...mv, me); handleEnd(checkEnd()); return; }
+  // 2) block enemy
+  mv = wouldWin(opp); if(mv){ place(...mv, me); const e=checkEnd(); if(e) handleEnd(e); else swapTurn(); return; }
+  // 3) center
+  const mid=Math.floor(n/2); if(!state.board[mid][mid]){ place(mid,mid,me); const e=checkEnd(); if(e) handleEnd(e); else swapTurn(); return; }
+  // 4) pick cells adjacent to own marks
+  let choices=[]; for(let r=0;r<n;r++){ for(let c=0;c<n;c++){ if(!state.board[r][c]){ // count nearby own marks
+        let score=0; const dirs=[[1,0],[0,1],[1,1],[1,-1],[-1,0],[0,-1],[-1,-1],[-1,1]];
+        for(const [dr,dc] of dirs){ const rr=r+dr, cc=c+dc; if(rr>=0&&rr<n&&cc>=0&&cc<n && state.board[rr][cc]===me) score++; }
+        choices.push({r,c,score});
+  }}}
+  choices.sort((a,b)=>b.score-a.score); if(choices.length){ const top = choices.filter(x=>x.score===choices[0].score); const pick= top[Math.floor(Math.random()*top.length)]; place(pick.r,pick.c,me); const e=checkEnd(); if(e) handleEnd(e); else swapTurn(); return; }
+  // 5) random
+  const empties=[]; for(let r=0;r<n;r++) for(let c=0;c<n;c++) if(!state.board[r][c]) empties.push([r,c]);
+  if(empties.length){ const [r,c]=empties[Math.floor(Math.random()*empties.length)]; place(r,c,me); const e=checkEnd(); if(e) handleEnd(e); else swapTurn(); }
+}
+
+// ===== Local Leaderboard (demo) =====
+function pushLeader(name, score){ const top = JSON.parse(localStorage.getItem('ttt_leader')||'[]'); top.push({name, score, at: Date.now()}); top.sort((a,b)=>b.score-a.score); localStorage.setItem('ttt_leader', JSON.stringify(top.slice(0,10))); }
+
+// ===== Micro UI helpers =====
+function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; requestAnimationFrame(()=>{ t.style.transform='translateX(-50%) translateY(0)'; setTimeout(()=>t.style.transform='translateX(-50%) translateY(120%)', 1800); }); }
+function ping(){ const g=document.querySelector('.gem'); g.animate([{transform:'scale(1)'},{transform:'scale(1.3)'},{transform:'scale(1)'}],{duration:500, easing:'ease'}); }
+
+// Initialize badges
+syncBadges();
+</script>
+</body>
+</html>
